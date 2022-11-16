@@ -10,8 +10,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
-	"cuelang.org/go/cue/errors"
 	"cuelang.org/go/cue/load"
+
+	"github.com/errordeveloper/cue-utils/errors"
 )
 
 var sharedCUEMutex = &sync.Mutex{
@@ -37,17 +38,17 @@ func (c *Compiler) BuildAll(dir, input string) (cue.Value, error) {
 	loadedInstances := load.Instances([]string{input}, &load.Config{Dir: dir})
 	for _, loadedInstance := range loadedInstances {
 		if loadedInstance.Err != nil {
-			return cue.Value{}, fmtCUEError(fmt.Sprintf("failed to load instances (dir: %q, input: %q)", dir, input), loadedInstance.Err)
+			return cue.Value{}, errors.Describe(fmt.Sprintf("failed to load instances (dir: %q, input: %q)", dir, input), loadedInstance.Err)
 		}
 	}
 
 	builtInstances, err := c.ctx.BuildInstances(loadedInstances)
 	if err != nil {
-		return cue.Value{}, fmtCUEError(fmt.Sprintf("failed to build instances (dir: %q, input: %q)", dir, input), err)
+		return cue.Value{}, errors.Describe(fmt.Sprintf("failed to build instances (dir: %q, input: %q)", dir, input), err)
 	}
 	for _, builtInstance := range builtInstances {
 		if err := builtInstance.Value().Validate(); err != nil {
-			return cue.Value{}, fmtCUEError("validation failure:", err)
+			return cue.Value{}, errors.Describe("validation failure", err)
 		}
 	}
 	if len(builtInstances) != 1 {
@@ -56,10 +57,10 @@ func (c *Compiler) BuildAll(dir, input string) (cue.Value, error) {
 	return builtInstances[0], nil
 }
 
-func (c *Compiler) MarshalValueJSON(v cue.Value) ([]byte, error) {
-	return json.Marshal(v)
+func (c *Compiler) CompileString(src string, options ...cue.BuildOption) cue.Value {
+	return c.ctx.CompileString(src, options...)
 }
 
-func fmtCUEError(desc string, err error) error {
-	return fmt.Errorf("%s: %s", desc, errors.Details(err, nil))
+func (c *Compiler) MarshalValueJSON(v cue.Value) ([]byte, error) {
+	return json.Marshal(v)
 }
