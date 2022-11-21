@@ -50,6 +50,29 @@ func (c *Config) HaveExistingTemplate(name string) bool {
 	return ok
 }
 
+func (c *Config) Get(name string) (*template.Generator, error) {
+	if !c.HaveExistingTemplate(name) {
+		return nil, fmt.Errorf("unknown template %q", name)
+	}
+	return c.templates[name], nil
+}
+
+func (c *Config) WithResource(name string, obj interface{}) (*template.Generator, error) {
+	t, err := c.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return t.WithResource(obj)
+}
+
+func (c *Config) WithDefaults(name string, obj interface{}) (*template.Generator, error) {
+	t, err := c.Get(name)
+	if err != nil {
+		return nil, err
+	}
+	return t.WithDefaults(obj)
+}
+
 func (c *Config) ExistingTemplates() []string {
 	templates := []string{}
 	for template := range c.templates {
