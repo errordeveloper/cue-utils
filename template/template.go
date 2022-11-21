@@ -20,19 +20,24 @@ const (
 
 type Generator struct {
 	dir      string
+	args     []string
 	cue      *compiler.Compiler
 	template cue.Value
 }
 
-func NewGenerator(dir string) *Generator {
+func NewGenerator(dir string, args ...string) *Generator {
+	if len(args) == 0 {
+		args = []string{"."}
+	}
 	return &Generator{
-		dir: dir,
-		cue: compiler.NewCompiler(),
+		args: args,
+		dir:  dir,
+		cue:  compiler.NewCompiler(),
 	}
 }
 
 func (g *Generator) CompileAndValidate() error {
-	template, err := g.cue.BuildAll(g.dir, ".")
+	template, err := g.cue.BuildAll(g.dir, g.args...)
 	if err != nil {
 		return err
 	}

@@ -31,20 +31,20 @@ func NewCompiler() *Compiler {
 	}
 }
 
-func (c *Compiler) BuildAll(dir, input string) (cue.Value, error) {
+func (c *Compiler) BuildAll(dir string, args ...string) (cue.Value, error) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	loadedInstances := load.Instances([]string{input}, &load.Config{Dir: dir})
+	loadedInstances := load.Instances(args, &load.Config{Dir: dir})
 	for _, loadedInstance := range loadedInstances {
 		if loadedInstance.Err != nil {
-			return cue.Value{}, errors.Describe(fmt.Sprintf("failed to load instances (dir: %q, input: %q)", dir, input), loadedInstance.Err)
+			return cue.Value{}, errors.Describe(fmt.Sprintf("failed to load instances (dir: %q, args: %v)", dir, args), loadedInstance.Err)
 		}
 	}
 
 	builtInstances, err := c.ctx.BuildInstances(loadedInstances)
 	if err != nil {
-		return cue.Value{}, errors.Describe(fmt.Sprintf("failed to build instances (dir: %q, input: %q)", dir, input), err)
+		return cue.Value{}, errors.Describe(fmt.Sprintf("failed to build instances (dir: %q, args: %v)", dir, args), err)
 	}
 	for _, builtInstance := range builtInstances {
 		if err := builtInstance.Value().Validate(); err != nil {

@@ -100,7 +100,7 @@ func TestGenerator(t *testing.T) {
 		err := gen.CompileAndValidate()
 
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(Equal("failed to load instances (dir: \"\", input: \".\"): no CUE files in .\n"))
+		g.Expect(err.Error()).To(Equal("failed to load instances (dir: \"\", args: [.]): no CUE files in .\n"))
 	}
 
 	{
@@ -109,7 +109,7 @@ func TestGenerator(t *testing.T) {
 		err := gen.CompileAndValidate()
 
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(Equal("failed to load instances (dir: \"./nonexistent\", input: \".\"): cannot find package \".\"\n"))
+		g.Expect(err.Error()).To(Equal("failed to load instances (dir: \"./nonexistent\", args: [.]): cannot find package \".\"\n"))
 	}
 }
 
@@ -187,4 +187,9 @@ func expectedWithCIDR(cidr string) string {
 		]
 	}`
 	return fmt.Sprintf(jsfmt, cidr)
+}
+
+func TestGeneratorWithImportPath(t *testing.T) {
+	g := NewGomegaWithT(t)
+	g.Expect(NewGenerator("./", "github.com/errordeveloper/cue-utils/template/testtypes").CompileAndValidate()).To(Succeed())
 }
