@@ -58,19 +58,32 @@ func (c *Config) Get(name string) (*template.Generator, error) {
 }
 
 func (c *Config) WithResource(name string, obj interface{}) (*template.Generator, error) {
-	t, err := c.Get(name)
+	template, err := c.Get(name)
 	if err != nil {
 		return nil, err
 	}
-	return t.WithResource(obj)
+	return template.WithResource(obj)
 }
 
 func (c *Config) WithDefaults(name string, obj interface{}) (*template.Generator, error) {
-	t, err := c.Get(name)
+	template, err := c.Get(name)
 	if err != nil {
 		return nil, err
 	}
-	return t.WithDefaults(obj)
+	return template.WithDefaults(obj)
+}
+
+func (c *Config) ApplyDefaults(name string, obj interface{}) error {
+	template, err := c.Get(name)
+	if err != nil {
+		return err
+	}
+	templateWithDefaults, err := template.WithDefaults(obj)
+	if err != nil {
+		return err
+	}
+	c.templates[name] = templateWithDefaults
+	return nil
 }
 
 func (c *Config) ExistingTemplates() []string {
