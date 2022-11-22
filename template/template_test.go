@@ -192,4 +192,5 @@ func expectedWithCIDR(cidr string) string {
 func TestGeneratorWithImportPath(t *testing.T) {
 	g := NewGomegaWithT(t)
 	g.Expect(NewGenerator("./", "github.com/errordeveloper/cue-utils/template/testtypes").CompileAndValidate()).To(Succeed())
+	g.Expect(NewGenerator("./", "github.com/errordeveloper/cue-utils/template/testassets").CompileAndValidate()).To(Succeed())
 }

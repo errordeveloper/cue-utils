@@ -4,7 +4,7 @@
 
 package testtypes
 
-//go:generate cue get go github.com/errordeveloper/cue-utils/template/testtypes
+//go:generate cue get go --local github.com/errordeveloper/cue-utils/template/testtypes
 
 type Cluster struct {
 	Metadata ClusterMeta `json:"metadata"`
