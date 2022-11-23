@@ -4,22 +4,10 @@
 package matchers
 
 import (
-	"encoding/json"
 	"testing"
 
 	. "github.com/onsi/gomega"
-
-	"github.com/errordeveloper/cue-utils/compiler"
 )
-
-func TestCUEBuildAll(t *testing.T) {
-	g := NewWithT(t)
-	value, err := compiler.NewCompiler().BuildAll("", ".")
-	g.Expect(err).ToNot(HaveOccurred())
-	data, err := json.Marshal(value)
-	g.Expect(err).ToNot(HaveOccurred())
-	g.Expect(data).To(MatchJSON(`{"foo":{"bar":{}}}`))
-}
 
 func TestCUEMatchers(t *testing.T) {
 	g := NewWithT(t)

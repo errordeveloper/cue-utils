@@ -19,10 +19,12 @@ const (
 )
 
 type Generator struct {
-	dir      string
-	args     []string
-	cue      *compiler.Compiler
-	template cue.Value
+	dir  string
+	args []string
+	cue  *compiler.Compiler
+
+	Value      cue.Value
+	ImportPath string
 }
 
 func NewGenerator(dir string, args ...string) *Generator {
@@ -37,13 +39,13 @@ func NewGenerator(dir string, args ...string) *Generator {
 }
 
 func (g *Generator) CompileAndValidate() error {
-	template, err := g.cue.BuildAll(g.dir, g.args...)
+	val, err := g.cue.BuildAll(g.dir, g.args...)
 	if err != nil {
 		return err
 	}
 
-	g.template = template
-
+	g.Value = val.Value
+	g.ImportPath = val.ImportPath
 	return nil
 }
 
@@ -52,13 +54,13 @@ func (g *Generator) with(key string, obj interface{}) (*Generator, error) {
 	if err := keyPath.Err(); err != nil {
 		return nil, err
 	}
-	result := g.template.FillPath(keyPath, obj)
-	if err := result.Err(); err != nil {
+	val := g.Value.FillPath(keyPath, obj)
+	if err := val.Err(); err != nil {
 		return nil, fmt.Errorf("error after filling %q: %w", key, err)
 	}
 	return &Generator{
-		dir:      g.dir,
-		template: result,
+		dir:   g.dir,
+		Value: val,
 	}, nil
 }
 
@@ -75,9 +77,9 @@ func (g *Generator) RenderJSON() ([]byte, error) {
 	if err := templateKeyPath.Err(); err != nil {
 		return nil, err
 	}
-	value := g.template.LookupPath(templateKeyPath)
-	if err := value.Err(); err != nil {
+	val := g.Value.LookupPath(templateKeyPath)
+	if err := val.Err(); err != nil {
 		return nil, fmt.Errorf("unable to lookup %q: %w", templateKey, err)
 	}
-	return value.MarshalJSON()
+	return val.MarshalJSON()
 }

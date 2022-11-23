@@ -19,7 +19,7 @@ func TestLoad(t *testing.T) {
 		err := (&Config{BaseDirectory: "./nonexistent"}).Load()
 
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(Equal(`unable to list avaliable config templates in "./nonexistent": open ./nonexistent: no such file or directory`))
+		g.Expect(err.Error()).To(Equal(`unable to list avaliable config templates in "./nonexistent": lstat ./nonexistent: no such file or directory`))
 	}
 
 	{
@@ -35,7 +35,24 @@ func TestLoad(t *testing.T) {
 
 		g.Expect(c.Load()).To(Succeed())
 
-		g.Expect(c.HaveExistingTemplate("basic")).To(BeTrue())
+		g.Expect(c.HaveExistingTemplate("github.com/errordeveloper/cue-utils/config/testassets/basic")).To(BeTrue())
+	}
+}
+
+func TestLoadWithImortPaths(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	{
+		c := &Config{BaseDirectory: "./"}
+		err := (c).Load()
+
+		g.Expect(err).To(Not(HaveOccurred()))
+
+		for _, template := range c.ExistingTemplates() {
+			template, err := c.Get(template)
+			g.Expect(err).To(Not(HaveOccurred()))
+			t.Logf("%#v\n", template.ImportPath)
+		}
 	}
 
 }

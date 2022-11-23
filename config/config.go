@@ -7,6 +7,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/errordeveloper/cue-utils/template"
 )
@@ -18,25 +19,29 @@ type Config struct {
 }
 
 func (c *Config) Load() error {
-	entries, err := os.ReadDir(c.BaseDirectory)
+	packagePaths := map[string]struct{}{}
+
+	err := filepath.WalkDir(c.BaseDirectory, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !entry.IsDir() && filepath.Ext(path) == ".cue" {
+			packagePaths[filepath.Dir(path)] = struct{}{}
+		}
+		return nil
+	})
 	if err != nil {
 		return fmt.Errorf("unable to list avaliable config templates in %q: %w", c.BaseDirectory, err)
 	}
 
 	c.templates = map[string]*template.Generator{}
 
-	for _, entry := range entries {
-		if entry.IsDir() {
-			// both path.Join and filpath.Join break this by striping leading `./`,
-			// just like Go, relative package path in must be prefixed with `./`
-			// (or `../`)
-			fullPath := c.BaseDirectory + "/" + entry.Name()
-			template := template.NewGenerator(fullPath)
-			if err := template.CompileAndValidate(); err != nil {
-				return fmt.Errorf("unable to load config template from %q: %w", fullPath, err)
-			}
-			c.templates[entry.Name()] = template
+	for packagePath := range packagePaths {
+		template := template.NewGenerator(packagePath)
+		if err := template.CompileAndValidate(); err != nil {
+			return fmt.Errorf("unable to load config template from %q: %w", packagePaths, err)
 		}
+		c.templates[template.ImportPath] = template
 	}
 
 	if len(c.templates) == 0 {
