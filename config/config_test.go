@@ -23,19 +23,22 @@ func TestLoad(t *testing.T) {
 	}
 
 	{
-		err := (&Config{BaseDirectory: "./empty"}).Load()
+		err := (&Config{BaseDirectory: "./testassets/empty"}).Load()
 
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(Equal(`no config templates found in "./empty"`))
+		g.Expect(err.Error()).To(Equal(`no config templates found in "./testassets/empty"`))
 	}
 
 	{
-
 		c := &Config{BaseDirectory: "testassets"}
 
 		g.Expect(c.Load()).To(Succeed())
 
 		g.Expect(c.HaveExistingTemplate("github.com/errordeveloper/cue-utils/config/testassets/basic")).To(BeTrue())
+		g.Expect(c.HaveExistingTemplate("github.com/errordeveloper/cue-utils/config/testassets/nested:nested1")).To(BeTrue())
+		g.Expect(c.HaveExistingTemplate("github.com/errordeveloper/cue-utils/config/testassets/nested/2:nested2")).To(BeTrue())
+		g.Expect(c.HaveExistingTemplate("github.com/errordeveloper/cue-utils/config/testassets/empty")).To(BeFalse())
+
 	}
 }
 
