@@ -7,5 +7,6 @@ import (
 )
 
 func Describe(desc string, err error) error {
-	return fmt.Errorf("%s: %s", desc, errors.Details(err, nil))
+	msg := errors.Details(err, &errors.Config{})
+	return fmt.Errorf("%s: %s", desc, msg)
 }

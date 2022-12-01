@@ -10,6 +10,7 @@ import (
 	"cuelang.org/go/cue"
 
 	"github.com/errordeveloper/cue-utils/compiler"
+	"github.com/errordeveloper/cue-utils/errors"
 )
 
 const (
@@ -81,5 +82,10 @@ func (g *Generator) RenderJSON() ([]byte, error) {
 	if err := val.Err(); err != nil {
 		return nil, fmt.Errorf("unable to lookup %q: %w", templateKey, err)
 	}
-	return val.MarshalJSON()
+
+	data, err := val.MarshalJSON()
+	if err != nil {
+		return nil, errors.Describe("unable to render", err)
+	}
+	return data, nil
 }
