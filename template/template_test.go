@@ -71,8 +71,7 @@ func TestGenerator(t *testing.T) {
 
 		_, err := baseGen.WithResource(cluster)
 		g.Expect(err).To(HaveOccurred())
-
-		g.Expect(err.Error()).To(Equal(`error after filling "resource": resource: field not allowed: foo`))
+		g.Expect(err.Error()).To(HavePrefix(`unable to fill path "resource": resource: field not allowed: foo:`))
 
 	}
 
@@ -84,15 +83,14 @@ func TestGenerator(t *testing.T) {
 
 		_, err = gen.RenderJSON()
 		g.Expect(err).To(HaveOccurred())
-		t.Log(err)
-		//g.Expect(err.Error()).To(Equal(`cue: marshal error: template.items.0.metadata.namespace: invalid interpolation: non-concrete value string (type string)`))
+		g.Expect(err.Error()).To(HavePrefix(`unable to render JSON: template.items.0.metadata.namespace: invalid interpolation:`))
 	}
 
 	{
 
 		_, err := baseGen.WithResource(0)
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(Equal(`error after filling "resource": resource: invalid interpolation: conflicting values 0 and {metadata:#ClusterMeta,spec:#ClusterSpec} (mismatched types int and struct) (and 3 more errors)`))
+		g.Expect(err.Error()).To(HavePrefix(`unable to fill path "resource": resource: invalid interpolation: conflicting values 0 and {metadata:#ClusterMeta,spec:#ClusterSpec} (mismatched types int and struct):`))
 	}
 
 	{

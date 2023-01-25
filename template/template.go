@@ -57,7 +57,7 @@ func (g *Generator) with(key string, obj interface{}) (*Generator, error) {
 	}
 	val := g.Value.FillPath(keyPath, obj)
 	if err := val.Err(); err != nil {
-		return nil, fmt.Errorf("error after filling %q: %w", key, err)
+		return nil, errors.Describe(fmt.Sprintf("unable to fill path %q", key), err)
 	}
 	return &Generator{
 		dir:   g.dir,
@@ -80,12 +80,12 @@ func (g *Generator) RenderJSON() ([]byte, error) {
 	}
 	val := g.Value.LookupPath(templateKeyPath)
 	if err := val.Err(); err != nil {
-		return nil, fmt.Errorf("unable to lookup %q: %w", templateKey, err)
+		return nil, fmt.Errorf("unable to lookup path %q: %w", templateKey, err)
 	}
 
 	data, err := val.MarshalJSON()
 	if err != nil {
-		return nil, errors.Describe("unable to render", err)
+		return nil, errors.Describe("unable to render JSON", err)
 	}
 	return data, nil
 }
