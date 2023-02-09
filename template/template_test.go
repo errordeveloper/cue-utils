@@ -5,14 +5,12 @@
 package template_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
 	. "github.com/onsi/gomega"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/errordeveloper/cue-utils/template"
 	"github.com/errordeveloper/cue-utils/template/testtypes"
@@ -75,7 +73,7 @@ func TestGenerator(t *testing.T) {
 
 		_, err := baseGen.WithResource(cluster)
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(HavePrefix(`unable to fill path "resource": resource.foo: field not allowed:`))
+		g.Expect(err.Error()).To(HavePrefix(`unable to fill path "resource": resource: field not allowed: foo:`))
 	}
 
 	{
@@ -115,14 +113,6 @@ func TestGenerator(t *testing.T) {
 	}
 }
 
-type k8sWrapper struct {
-	runtime.Object
-}
-
-func (w *k8sWrapper) MarshalJSON() ([]byte, error) {
-	return json.Marshal(w.Object)
-}
-
 func TestGeneratorWithKubernetesResource(t *testing.T) {
 	g := NewGomegaWithT(t)
 
@@ -135,20 +125,21 @@ func TestGeneratorWithKubernetesResource(t *testing.T) {
 	g.Expect(err).To(Not(HaveOccurred()))
 
 	{
-		_, err = gen.WithResource(&k8sWrapper{Object: makePod()})
+		_, err = gen.WithResource(makePod())
 
 		g.Expect(err).To(Not(HaveOccurred()))
 	}
 
 	{
 		pod := makePod()
-		_, err = gen.WithResource(pod)
+		// this case triggers buggy behaviour, because corev1.Pod doesn't cast to runtime.Object
+		_, err = gen.WithResource(*pod)
 		g.Expect(err).To(HaveOccurred())
 		// this looks like a bug in CUE, it
 		g.Expect(err.Error()).To(HavePrefix("unable to fill path \"resource\": resource.spec.volumes.0: field not allowed: bytes"))
 		// removing volumes from the pod spec makes it work
 		pod.Spec.Volumes = nil
-		_, err = gen.WithResource(pod)
+		_, err = gen.WithResource(*pod)
 		g.Expect(err).To(Not(HaveOccurred()))
 	}
 

@@ -5,9 +5,11 @@
 package template
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"cuelang.org/go/cue"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/errordeveloper/cue-utils/compiler"
 	"github.com/errordeveloper/cue-utils/errors"
@@ -50,11 +52,21 @@ func (g *Generator) CompileAndValidate() error {
 	return nil
 }
 
+type k8sWrapper struct{ runtime.Object }
+
+func (w *k8sWrapper) MarshalJSON() ([]byte, error) { return json.Marshal(w.Object) }
+
 func (g *Generator) with(key string, obj interface{}) (*Generator, error) {
 	keyPath := cue.ParsePath(key)
 	if err := keyPath.Err(); err != nil {
 		return nil, err
 	}
+
+	// temporary fix for CUE bug reproduced in https://github.com/errordeveloper/cue-utils/pull/1
+	if rtObj, isRuntimeObject := obj.(runtime.Object); isRuntimeObject {
+		obj = &k8sWrapper{Object: rtObj}
+	}
+
 	val := g.Value.FillPath(keyPath, obj)
 	if err := val.Err(); err != nil {
 		return nil, errors.Describe(fmt.Sprintf("unable to fill path %q", key), err)
