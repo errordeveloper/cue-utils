@@ -5,10 +5,14 @@
 package template_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
 	. "github.com/onsi/gomega"
+
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	. "github.com/errordeveloper/cue-utils/template"
 	"github.com/errordeveloper/cue-utils/template/testtypes"
@@ -71,8 +75,7 @@ func TestGenerator(t *testing.T) {
 
 		_, err := baseGen.WithResource(cluster)
 		g.Expect(err).To(HaveOccurred())
-		g.Expect(err.Error()).To(HavePrefix(`unable to fill path "resource": resource: field not allowed: foo:`))
-
+		g.Expect(err.Error()).To(HavePrefix(`unable to fill path "resource": resource.foo: field not allowed:`))
 	}
 
 	{
@@ -110,6 +113,88 @@ func TestGenerator(t *testing.T) {
 		g.Expect(err).To(HaveOccurred())
 		g.Expect(err.Error()).To(Equal("failed to load instances (dir: \"./nonexistent\", args: [.]): cannot find package \".\"\n"))
 	}
+}
+
+type k8sWrapper struct {
+	runtime.Object
+}
+
+func (w *k8sWrapper) MarshalJSON() ([]byte, error) {
+	return json.Marshal(w.Object)
+}
+
+func TestGeneratorWithKubernetesResource(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	gen := NewGenerator("./testassets/pods")
+	err := gen.CompileAndValidate()
+
+	g.Expect(err).To(Not(HaveOccurred()))
+
+	_, err = gen.RenderJSON()
+	g.Expect(err).To(Not(HaveOccurred()))
+
+	{
+		_, err = gen.WithResource(&k8sWrapper{Object: makePod()})
+
+		g.Expect(err).To(Not(HaveOccurred()))
+	}
+
+	{
+		pod := makePod()
+		_, err = gen.WithResource(pod)
+		g.Expect(err).To(HaveOccurred())
+		// this looks like a bug in CUE, it
+		g.Expect(err.Error()).To(HavePrefix("unable to fill path \"resource\": resource.spec.volumes.0: field not allowed: bytes"))
+		// removing volumes from the pod spec makes it work
+		pod.Spec.Volumes = nil
+		_, err = gen.WithResource(pod)
+		g.Expect(err).To(Not(HaveOccurred()))
+	}
+
+}
+
+func makePod() *corev1.Pod {
+	return &corev1.Pod{
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "bar",
+					Image: "bar",
+					VolumeMounts: []corev1.VolumeMount{{
+						Name:      "foo",
+						MountPath: "/foo",
+					}},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "FOO_PATH",
+							Value: "/foo",
+						},
+					},
+				},
+				{
+					Name:  "sidecar",
+					Image: "sidecar",
+					VolumeMounts: []corev1.VolumeMount{{
+						Name:      "foo1",
+						MountPath: "/foo",
+					}},
+				},
+			},
+			Volumes: []corev1.Volume{
+				{
+					Name: "foo1",
+				},
+				{
+					Name: "foo2",
+					VolumeSource: corev1.VolumeSource{
+						EmptyDir: &corev1.EmptyDirVolumeSource{
+							Medium: "Memory",
+						},
+					},
+				},
+			},
+		}}
 }
 
 func expectedWithCIDR(cidr string) string {
