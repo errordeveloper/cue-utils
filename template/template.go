@@ -52,6 +52,8 @@ func (g *Generator) CompileAndValidate() error {
 	return nil
 }
 
+func (g *Generator) Compiler() *compiler.Compiler { return g.cue }
+
 type k8sWrapper struct{ runtime.Object }
 
 func (w *k8sWrapper) MarshalJSON() ([]byte, error) { return json.Marshal(w.Object) }
