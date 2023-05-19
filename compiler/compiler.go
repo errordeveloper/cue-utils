@@ -68,9 +68,16 @@ func (c *Compiler) BuildAll(dir string, args ...string) (Value, error) {
 }
 
 func (c *Compiler) CompileString(src string, options ...cue.BuildOption) cue.Value {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	return c.ctx.CompileString(src, options...)
 }
 
 func (c *Compiler) MarshalValueJSON(v cue.Value) ([]byte, error) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	return json.Marshal(v)
 }
+
+func (c *Compiler) LockMutex()   { c.mutex.Lock() }
+func (c *Compiler) UnlockMutex() { c.mutex.Unlock() }

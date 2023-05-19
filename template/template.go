@@ -59,6 +59,9 @@ type k8sWrapper struct{ runtime.Object }
 func (w *k8sWrapper) MarshalJSON() ([]byte, error) { return json.Marshal(w.Object) }
 
 func (g *Generator) with(key string, obj interface{}) (*Generator, error) {
+	g.cue.LockMutex()
+	defer g.cue.UnlockMutex()
+
 	keyPath := cue.ParsePath(key)
 	if err := keyPath.Err(); err != nil {
 		return nil, err
@@ -76,6 +79,7 @@ func (g *Generator) with(key string, obj interface{}) (*Generator, error) {
 	return &Generator{
 		dir:   g.dir,
 		Value: val,
+		cue:   g.cue,
 	}, nil
 }
 
@@ -88,10 +92,14 @@ func (g *Generator) WithResource(obj interface{}) (*Generator, error) {
 }
 
 func (g *Generator) RenderJSON() ([]byte, error) {
+	g.cue.LockMutex()
+	defer g.cue.UnlockMutex()
+
 	templateKeyPath := cue.ParsePath(templateKey)
 	if err := templateKeyPath.Err(); err != nil {
 		return nil, err
 	}
+
 	val := g.Value.LookupPath(templateKeyPath)
 	if err := val.Err(); err != nil {
 		return nil, fmt.Errorf("unable to lookup path %q: %w", templateKey, err)
